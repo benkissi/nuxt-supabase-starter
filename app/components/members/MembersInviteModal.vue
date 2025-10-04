@@ -1,0 +1,99 @@
+<script setup lang="ts">
+import {
+  InviteSchema,
+  type InviteSchemaType,
+} from "~/utils/schemas/forms/members.schema";
+
+const show = defineModel("show", {
+  type: Boolean,
+  default: false,
+});
+
+const state = reactive<InviteSchemaType>({
+  email: "",
+  name: "",
+  role: "viewer",
+});
+
+const fields = ref([
+  {
+    name: "email",
+    label: "Email",
+    type: "text",
+    required: true,
+    placeholder: "Member email",
+  },
+  {
+    name: "name",
+    label: "Name",
+    type: "text",
+    required: true,
+    placeholder: "Full name",
+  },
+  {
+    name: "role",
+    label: "Role",
+    type: "select",
+    placeholder: "Select a role",
+    options: [
+      { label: "Admin", value: "admin" },
+      { label: "Editor", value: "editor" },
+      { label: "Viewer", value: "viewer" },
+    ],
+    required: true,
+  },
+]);
+
+const handleSubmit = async () => {};
+
+const fieldTypes: Record<string, string | Component> = {
+  select: resolveComponent("USelect"),
+  select_menu: resolveComponent("USelectMenu"),
+  text: resolveComponent("UInput"),
+};
+</script>
+
+<template>
+  <UModal v-model:open="show" title="Invite Member">
+    <template #body>
+      <UForm
+        :schema="InviteSchema"
+        :state="state"
+        class="space-y-4"
+        @submit="handleSubmit"
+      >
+        <UFormField
+          v-for="field in fields"
+          :key="field.name"
+          :label="field.label"
+          :name="field.name"
+        >
+          <component
+            :is="fieldTypes[field.type]"
+            :v-model="(state as Record<string, any>)[field.name]"
+            :name="field.name"
+            :default-value="(state as Record<string, any>)[field.name]"
+            :required="field.required"
+            :placeholder="field.placeholder"
+            class="w-full"
+          />
+        </UFormField>
+        <div class="flex justify-end mt-10">
+          <UButton
+            type="button"
+            label="Cancel"
+            color="neutral"
+            variant="outline"
+            class="mr-3"
+            @click="show = false"
+          />
+          <UButton
+            type="submit"
+            label="Send Invite"
+            color="primary"
+          />
+        </div>
+      </UForm>
+    </template>
+  </UModal>
+</template>
