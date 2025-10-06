@@ -1,16 +1,11 @@
 <script setup lang="ts">
 const { defaultMenus } = useAppMenu();
 
-// const user = useSupabaseUser();
+const user = useSupabaseUser();
 // const authStore = useAuthStore();
 
 const open = ref(false);
 
-// onMounted(() => {
-//   if (user.value) {
-//     authStore.initialize();
-//   }
-// });
 </script>
 
 <template>

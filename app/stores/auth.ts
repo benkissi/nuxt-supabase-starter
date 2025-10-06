@@ -4,6 +4,8 @@
 export const useAuthStore = defineStore("auth", () => {
     const user = ref<any>(null);
     const token = ref<string | null>(null);
-    return { user, token };
+
+    const organization = ref<any>(null);
+    return { user, token, organization };
 })
 

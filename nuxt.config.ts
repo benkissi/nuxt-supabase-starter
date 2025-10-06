@@ -47,7 +47,6 @@ export default defineNuxtConfig({
         "/auth/register",
         "/auth/confirm",
         "/auth/verify-email",
-        "/dashboard*",
         // "/auth/onboarding",
       ],
     },
