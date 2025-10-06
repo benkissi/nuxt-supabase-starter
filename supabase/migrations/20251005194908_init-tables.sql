@@ -205,6 +205,32 @@ CREATE POLICY "Org owners and admins can send invitations"
     )
   );
 
+CREATE POLICY "Org owners and admins can delete invitations"
+  ON public.invitations
+  FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.organization_members om
+      WHERE om.organization_id = organization_id            -- row's org id
+        AND om.user_id = auth.uid()::uuid                    -- cast auth.uid() to UUID
+        AND om.role IN ('owner', 'admin')
+    )
+  );
+
+CREATE POLICY "Org owners and admins can update invitations"
+  ON public.invitations
+  FOR UPDATE
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.organization_members om
+      WHERE om.organization_id = organization_id            -- row's org id
+        AND om.user_id = auth.uid()::uuid                    -- cast auth.uid() to UUID
+        AND om.role IN ('owner', 'admin')
+    )
+  );
+
 CREATE POLICY "Invited users can view their own invites"
   ON public.invitations
   FOR SELECT

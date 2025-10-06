@@ -36,6 +36,23 @@ const memberApi = (fetch: $Fetch) => {
         .select();
       if (error) throw error;
       return data;
+    },
+    updateInvite: async (id: string, details: { email: string; role: string}) => {
+      const { data, error } = await supabase
+        .from("invitations")
+        .update(details as never) // type assertion to avoid TS error
+        .eq("id", id)
+        .select();
+      if (error) throw error;
+      return data;
+    },
+    revokeInvite: async (id: string) => {
+      const { error } = await supabase
+        .from("invitations")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      return true;
     }
   };
 };

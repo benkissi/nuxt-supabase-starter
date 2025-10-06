@@ -20,7 +20,7 @@ export interface IInvitation {
   id: string;
   email: string;
   status: "pending" | "accepted" | "declined";
-  role: "admin" | "editor" | "viewer";
+  role: "admin" | "editor" | "viewer" | "member" | "owner";
   createdAt: string;
   updatedAt: string;
 }
