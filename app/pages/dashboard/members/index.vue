@@ -12,7 +12,7 @@ const deletingMember = ref(false);
 
 const { data, status } = useAsyncData("members", async () => {
   const res = await api.members.getMembers();
-  return res.data;
+  return res;
 });
 
 type TableColumn = {
@@ -29,8 +29,9 @@ const columns: TableColumn[] = [
     header: "Name",
     cell: ({ row }: { row: { [key: string]: unknown; original: IMember } }) => {
       return h("div", { class: "flex items-center gap-3" }, [
-        h(resolveComponent("UAvatar"), {
-          src: (row.original as IMember).picture?.url || "/default-avatar.png",
+        h(resolveComponent("CommonAsyncImage"), {
+          path: (row.original as IMember).account.image?.path || "/default-avatar.png",
+          bucket: (row.original as IMember).account.image?.bucket || "avatars",
           alt: (row.original as IMember).name,
           class: "w-8 h-8 rounded-full object-cover",
         }),
@@ -38,7 +39,9 @@ const columns: TableColumn[] = [
       ]);
     },
   },
-  { accessorKey: "email", header: "Email" },
+  { accessorKey: "email", header: "Email", cell: ({ row }: { row: { [key: string]: unknown; original: IMember } }) => (row.original as IMember).email },
+  { accessorKey: "job_title", header: "Job Title", cell: ({ row }: { row: { [key: string]: unknown; original: IMember } }) => (row.original as IMember).job_title || '-' },
+  { accessorKey: "role", header: "Role" },
    {
     accessorKey: "actions",
     header: "",
@@ -117,7 +120,7 @@ const handleDeleteMember = async () => { }
           </div>
         </template>
       </CommonTable>
-      <MembersInviteModal v-model:show="showAddModal" />
+      <MembersInviteModal :member="memberToEdit" v-model:show="showAddModal" />
       <CommonConfirmDelete
       v-model="showConfirmDelete"
       :loading="deletingMember"

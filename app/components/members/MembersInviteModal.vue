@@ -4,6 +4,18 @@ import {
   type InviteSchemaType,
 } from "~/utils/schemas/forms/members.schema";
 
+interface IProps {
+  member?: {
+    id: string;
+    email: string;
+    name: string;
+    role: "admin" | "editor" | "viewer";
+  } | null;
+}
+const props = withDefaults(defineProps<IProps>(), {
+  member: null,
+});
+
 const show = defineModel("show", {
   type: Boolean,
   default: false,
@@ -14,6 +26,8 @@ const state = reactive<InviteSchemaType>({
   name: "",
   role: "viewer",
 });
+
+const isEditMode = computed(() => !!props.member);  
 
 const fields = ref([
   {
@@ -35,10 +49,13 @@ const fields = ref([
     label: "Role",
     type: "select",
     placeholder: "Select a role",
+    labelKey: "label",
+    valueKey: "value",
     options: [
       { label: "Admin", value: "admin" },
       { label: "Editor", value: "editor" },
       { label: "Viewer", value: "viewer" },
+      { label: "Owner", value: "owner" },
     ],
     required: true,
   },
@@ -51,10 +68,26 @@ const fieldTypes: Record<string, string | Component> = {
   select_menu: resolveComponent("USelectMenu"),
   text: resolveComponent("UInput"),
 };
+
+watch(
+  () => props.member,
+  (newMember) => {
+    if (newMember) {
+      state.email = newMember.email;
+      state.name = newMember.name;
+      state.role = newMember.role;
+    } else {
+      state.email = "";
+      state.name = "";
+      state.role = "viewer";
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
-  <UModal v-model:open="show" title="Invite Member">
+  <UModal v-model:open="show" :title="isEditMode ? 'Edit Member' : 'Invite Member'" size="md">
     <template #body>
       <UForm
         :schema="InviteSchema"
@@ -74,7 +107,10 @@ const fieldTypes: Record<string, string | Component> = {
             :name="field.name"
             :default-value="(state as Record<string, any>)[field.name]"
             :required="field.required"
+            :label-key="field.labelKey"
+            :value-key="field.valueKey"
             :placeholder="field.placeholder"
+            :items="field.options"
             class="w-full"
           />
         </UFormField>

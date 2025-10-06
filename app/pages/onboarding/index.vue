@@ -28,7 +28,8 @@ const userDetails = ref<{
   fullName: string;
   jobTitle?: string;
   avatarFile: File | null;
-}>({ fullName: "", jobTitle: "", avatarFile: null });
+  jobEmail?: string;
+}>({ fullName: "", jobTitle: "", avatarFile: null, jobEmail: user?.email || "" });
 type Invite = { email: string; role: "admin" | "member" };
 const invites = ref<Invite[]>([]);
 
@@ -86,6 +87,7 @@ async function submitAll() {
         .from("organization_members")
         .update({
           job_title: userDetails.value.jobTitle,
+          email: userDetails.value.jobEmail,
         })
         .eq("id", member.id);
     }

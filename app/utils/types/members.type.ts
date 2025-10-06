@@ -1,11 +1,17 @@
 export interface IMember {
   id: string;
-  name: string;
-  email: string;
   role: "admin" | "editor" | "viewer";
-  picture: {
-    url: string
-  } | null;
+  email: string;
+  name: string;
+  job_title?: string;
   createdAt: string;
-  updatedAt: string;
+  account: {
+    id: string;
+    name: string;
+    email: string;
+    image: {
+      path: string;
+      bucket: string;
+    };
+  };
 }
