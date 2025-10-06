@@ -65,7 +65,7 @@ function onCancel() {
 </script>
 
 <template>
-  <UModal :title="title" v-model:open="isOpen" size="sm">
+  <UModal v-model:open="isOpen" :title="title" size="sm">
     <template #body>
       <div class="p-4">
         <div class="flex flex-col items-center">

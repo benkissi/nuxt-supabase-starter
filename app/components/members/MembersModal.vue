@@ -1,23 +1,30 @@
 <script setup lang="ts">
 import {
-  InviteSchema,
-  type InviteSchemaType,
+  MemberSchema,
+  type MemberSchemaType,
 } from "~/utils/schemas/forms/members.schema";
 
-const emit  = defineEmits(["invitationSent"]);
+import type { IMember } from "~/utils/types/members.type";
+
+interface IProps {
+  member?: IMember | null;
+}
+const props = withDefaults(defineProps<IProps>(), {
+  member: null,
+});
+
 const show = defineModel("show", {
   type: Boolean,
   default: false,
 });
 
-const api = useApi();
-const sendingInvite = ref(false);
-const toast = useToast();
-
-const state = reactive<InviteSchemaType>({
+const state = reactive<MemberSchemaType>({
   email: "",
+  name: "",
   role: "viewer",
 });
+
+const isEditMode = computed(() => !!props.member);  
 
 const fields = ref([
   {
@@ -26,6 +33,13 @@ const fields = ref([
     type: "text",
     required: true,
     placeholder: "Member email",
+  },
+  {
+    name: "name",
+    label: "Name",
+    type: "text",
+    required: true,
+    placeholder: "Full name",
   },
   {
     name: "role",
@@ -44,52 +58,36 @@ const fields = ref([
   },
 ]);
 
-const reset = () => {
-  state.email = "";
-  state.role = "viewer";
-};
-
-const handleSubmit = async () => {
-  try {
-    sendingInvite.value = true;
-    await api.members.sendInvite({
-      ...state,
-      organization_id: "d6029e89-4595-4764-89f8-a4733c6ebaad",
-    });
-    toast.add({
-      title: "Invite Sent",
-      description: `Invitation sent to ${state.email}`,
-      color: "success",
-    });
-    reset();
-    emit("invitationSent");
-  } catch (error) {
-    toast.add({
-      title: "Error",
-      description:
-        (error as { message?: string })?.message ||
-        "Failed to send invite. Please try again.",
-      color: "error",
-    });
-    console.error("Failed to send invite:", error);
-  } finally {
-    sendingInvite.value = false;
-    show.value = false;
-  }
-};
+const handleSubmit = async () => {};
 
 const fieldTypes: Record<string, string | Component> = {
   select: resolveComponent("USelect"),
   select_menu: resolveComponent("USelectMenu"),
   text: resolveComponent("UInput"),
 };
+
+watch(
+  () => props.member,
+  (newMember) => {
+    if (newMember) {
+      state.email = newMember.email;
+      state.name = newMember.name;
+      state.role = newMember.role;
+    } else {
+      state.email = "";
+      state.name = "";
+      state.role = "viewer";
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
-  <UModal v-model:open="show" title="Send an invite" size="md">
+  <UModal v-model:open="show" :title="isEditMode ? 'Edit Member' : 'Invite Member'" size="md">
     <template #body>
       <UForm
-        :schema="InviteSchema"
+        :schema="MemberSchema"
         :state="state"
         class="space-y-4"
         @submit="handleSubmit"
@@ -102,8 +100,9 @@ const fieldTypes: Record<string, string | Component> = {
         >
           <component
             :is="fieldTypes[field.type]"
-            v-model="(state as Record<string, any>)[field.name]"
+            :v-model="(state as Record<string, any>)[field.name]"
             :name="field.name"
+            :default-value="(state as Record<string, any>)[field.name]"
             :required="field.required"
             :label-key="field.labelKey"
             :value-key="field.valueKey"
@@ -125,7 +124,6 @@ const fieldTypes: Record<string, string | Component> = {
             type="submit"
             label="Send Invite"
             color="primary"
-            :loading="sendingInvite"
           />
         </div>
       </UForm>

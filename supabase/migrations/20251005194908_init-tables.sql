@@ -196,11 +196,12 @@ CREATE POLICY "Org owners and admins can send invitations"
   ON public.invitations
   FOR INSERT
   WITH CHECK (
-    auth.uid() IN (
-      SELECT om.user_id
-      FROM public.organization_members AS om
-      WHERE om.organization_id = invitations.organization_id
-      AND om.role IN ('owner', 'admin')
+    EXISTS (
+      SELECT 1
+      FROM public.organization_members om
+      WHERE om.organization_id = organization_id            -- new row's org id
+        AND om.user_id = auth.uid()::uuid                    -- cast auth.uid() to UUID
+        AND om.role IN ('owner', 'admin')
     )
   );
 

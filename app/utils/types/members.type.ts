@@ -1,6 +1,6 @@
 export interface IMember {
   id: string;
-  role: "admin" | "editor" | "viewer";
+  role: "admin" | "editor" | "viewer" | "owner";
   email: string;
   name: string;
   job_title?: string;
@@ -14,4 +14,13 @@ export interface IMember {
       bucket: string;
     };
   };
+}
+
+export interface IInvitation {
+  id: string;
+  email: string;
+  status: "pending" | "accepted" | "declined";
+  role: "admin" | "editor" | "viewer";
+  createdAt: string;
+  updatedAt: string;
 }
