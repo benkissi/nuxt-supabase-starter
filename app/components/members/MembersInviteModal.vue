@@ -14,6 +14,9 @@ const props = withDefaults(defineProps<IProps>(), {
   invite: null,
 });
 
+const authStore = useAuthStore();
+
+const { currentOrganization } = storeToRefs(authStore);
 const isEditMode = computed(() => !!props.invite);
 
 const emit  = defineEmits(["invitationSent"]);
@@ -65,10 +68,9 @@ const reset = () => {
 const handleSubmit = async () => {
   try {
     sendingInvite.value = true;
-    // TODO: update invite API call to use current organization ID
     await api.members.sendInvite({
       ...state,
-      organization_id: "49141afb-a99b-4cf8-a5a9-9c8736964c8c",
+      organization_id: currentOrganization.value?.id,
     });
     toast.add({
       title: "Invite Sent",
@@ -96,7 +98,6 @@ const handleUpdate = async () => {
   try {
     if (!props.invite?.id) throw new Error("No invite ID provided");
     sendingInvite.value = true;
-    // TODO: update invite API call to use current organization ID
     await api.members.updateInvite(props.invite.id, state);
     toast.add({
       title: "Invite Updated",

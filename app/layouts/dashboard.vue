@@ -1,9 +1,11 @@
 <script setup lang="ts">
+
+const authStore = useAuthStore();
 const { defaultMenus } = useAppMenu();
 
-const user = useSupabaseUser();
-// const authStore = useAuthStore();
+authStore.init();
 
+const { organizations } = storeToRefs(authStore);
 const open = ref(false);
 
 </script>
@@ -19,7 +21,7 @@ const open = ref(false);
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
       <template #header="{ collapsed }">
-        <DashboardTeams :collapsed="collapsed" />
+        <DashboardTeams :organizations="organizations" :collapsed="collapsed" />
       </template>
       <template #default="state">
         <UDashboardSearchButton

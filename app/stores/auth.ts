@@ -2,10 +2,10 @@
 
 
 export const useAuthStore = defineStore("auth", () => {
-    const user = ref<any>(null);
+    const user = useSupabaseUser();
     const token = ref<string | null>(null);
 
-    const organization = ref<any>(null);
-    return { user, token, organization };
+
+    return { user, token };
 })
 
