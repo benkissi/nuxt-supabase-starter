@@ -44,10 +44,13 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       color: "success",
     });
   } catch (error) {
+    const errorMessage =
+      typeof error === "object" && error !== null && "message" in error
+        ? (error as { message: string }).message
+        : "Failed to create account. Please try again.";
     toast.add({
       title: "Error",
-      description:
-        error?.message || "Failed to create account. Please try again.",
+      description: errorMessage,
       color: "error",
     });
   } finally {
