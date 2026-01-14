@@ -30,7 +30,7 @@ const userDetails = ref<{
   avatarFile: File | null;
   jobEmail?: string;
 }>({ fullName: "", jobTitle: "", avatarFile: null, jobEmail: user?.email || "" });
-type Invite = { email: string; role: "admin" | "member" };
+type Invite = { email: string; name?: string; role: "admin" | "member" };
 const invites = ref<Invite[]>([]);
 
 const submitting = ref(false);
@@ -133,18 +133,47 @@ async function submitAll() {
       auth.organization = updatedOrg || auth.organization;
     }
 
-    // 5️⃣ Create invitations
+    // 5️⃣ Send invitations
     if (invites.value.length) {
-      const formatted = invites.value.map((i) => ({
-        organization_id: organizationId,
-        email: i.email,
-        role: i.role,
-        invited_by: userId,
-      }));
-      const { error: inviteErr } = await (supabase as any)
-        .from("invitations")
-        .insert(formatted);
-      if (inviteErr) throw inviteErr;
+      const api = useApi();
+      let successCount = 0;
+      let failedCount = 0;
+      
+      for (const invite of invites.value) {
+        try {
+          const result = await api.members.sendInvite({
+            email: invite.email,
+            name: invite.name,
+            role: invite.role,
+            organization_id: organizationId,
+          });
+          
+          if (result.email_sent) {
+            successCount++;
+          } else {
+            failedCount++;
+            console.warn(`Invitation created for ${invite.email} but email failed to send`);
+          }
+        } catch (error: any) {
+          failedCount++;
+          console.error(`Failed to send invitation to ${invite.email}:`, error);
+          // Continue with other invites even if one fails
+        }
+      }
+      
+      if (failedCount > 0) {
+        toast.add({
+          title: "Some invitations failed",
+          description: `${successCount} sent, ${failedCount} failed. Check the dashboard to resend.`,
+          color: "warning",
+        });
+      } else if (successCount > 0) {
+        toast.add({
+          title: "Invitations sent",
+          description: `${successCount} invitation${successCount > 1 ? 's' : ''} sent successfully`,
+          color: "success",
+        });
+      }
     }
 
     // ✅ Done

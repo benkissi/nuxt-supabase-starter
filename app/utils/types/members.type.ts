@@ -19,6 +19,7 @@ export interface IMember {
 export interface IInvitation {
   id: string;
   email: string;
+  name?: string;
   status: "pending" | "accepted" | "declined";
   role: "admin" | "editor" | "viewer" | "member" | "owner";
   createdAt: string;

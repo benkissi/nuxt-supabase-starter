@@ -37,9 +37,12 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // supabaseRoleKey: process.env.NUXT_SUPABASE_ROLE_KEY,
     supabaseServiceKey: process.env.NUXT_SUPABASE_SERVICE_KEY,
+    resendApiKey: process.env.NUXT_RESEND_KEY,
+    resendDomain: process.env.NUXT_RESEND_DOMAIN || "mail.example.com",
     public: {
       supabaseUrl: process.env.NUXT_PUBLIC_SUPABASE_URL,
       supabaseKey: process.env.NUXT_PUBLIC_SUPABASE_KEY,
+      appUrl: process.env.NUXT_PUBLIC_APP_URL,
       tunnels: "https://arrangements-namely-clone-emirates.trycloudflare.com",
     },
   },
@@ -75,6 +78,7 @@ export default defineNuxtConfig({
         "/auth/register",
         "/auth/confirm",
         "/auth/verify-email",
+        "/invite",
         // "/auth/onboarding",
       ],
     },

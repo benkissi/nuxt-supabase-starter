@@ -60,6 +60,13 @@ const columns: TableColumn[] = [
               },
             },
             {
+              label: "Resend Invite",
+              icon: "i-heroicons-arrow-path",
+              onSelect: () => {
+                handleResendInvite(row.original);
+              },
+            },
+            {
               label: "Remove invite",
               icon: "i-heroicons-trash",
               onSelect: () => {
@@ -107,6 +114,31 @@ const handleDeleteMember = async () => {
     showConfirmDelete.value = false;
     invitationToDelete.value = null;
     deletingMember.value = false;
+  }
+};
+
+const resendingInvite = ref(false);
+const handleResendInvite = async (invitation: IInvitation) => {
+  try {
+    resendingInvite.value = true;
+    await api.members.resendInvite(invitation.id);
+    toast.add({
+      title: "Invitation resent",
+      description: `Invitation email resent to ${invitation.email}`,
+      color: "success",
+    });
+    refresh();
+  } catch (error) {
+    console.error("Error resending invitation:", error);
+    toast.add({
+      title: "Error",
+      description:
+        (error as { message?: string })?.message ||
+        "Failed to resend invitation. Please try again.",
+      color: "error",
+    });
+  } finally {
+    resendingInvite.value = false;
   }
 };
 </script>

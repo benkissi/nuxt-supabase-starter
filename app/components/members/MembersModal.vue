@@ -22,17 +22,19 @@ const state = reactive<MemberSchemaType>({
   email: "",
   name: "",
   role: "viewer",
+  job_title: "",
 });
 
 const isEditMode = computed(() => !!props.member);  
 
-const fields = ref([
+const fields = computed(() => [
   {
     name: "email",
     label: "Email",
     type: "text",
     required: true,
     placeholder: "Member email",
+    disabled: isEditMode.value,
   },
   {
     name: "name",
@@ -40,6 +42,14 @@ const fields = ref([
     type: "text",
     required: true,
     placeholder: "Full name",
+    disabled: isEditMode.value,
+  },
+  {
+    name: "job_title",
+    label: "Job Title",
+    type: "text",
+    required: false,
+    placeholder: "Job title (optional)",
   },
   {
     name: "role",
@@ -58,7 +68,44 @@ const fields = ref([
   },
 ]);
 
-const handleSubmit = async () => {};
+const api = useApi();
+const toast = useToast();
+const updatingMember = ref(false);
+
+const handleSubmit = async () => {
+  if (!props.member?.id) {
+    toast.add({
+      title: "Error",
+      description: "Invalid member",
+      color: "error",
+    });
+    return;
+  }
+
+  try {
+    updatingMember.value = true;
+    await api.members.updateMember(props.member.id, {
+      role: state.role,
+      job_title: state.job_title || null,
+    });
+    toast.add({
+      title: "Success",
+      description: `Updated ${state.name}'s profile`,
+      color: "success",
+    });
+    show.value = false;
+    // Emit event to refresh members table
+    window.dispatchEvent(new CustomEvent("memberUpdated"));
+  } catch (error: any) {
+    toast.add({
+      title: "Error",
+      description: error.message || "Failed to update member",
+      color: "error",
+    });
+  } finally {
+    updatingMember.value = false;
+  }
+};
 
 const fieldTypes: Record<string, string | Component> = {
   select: resolveComponent("USelect"),
@@ -73,10 +120,12 @@ watch(
       state.email = newMember.email;
       state.name = newMember.name;
       state.role = newMember.role;
+      state.job_title = newMember.job_title || "";
     } else {
       state.email = "";
       state.name = "";
       state.role = "viewer";
+      state.job_title = "";
     }
   },
   { immediate: true }
@@ -104,6 +153,7 @@ watch(
             :name="field.name"
             :default-value="(state as Record<string, any>)[field.name]"
             :required="field.required"
+            :disabled="field.disabled"
             :label-key="field.labelKey"
             :value-key="field.valueKey"
             :placeholder="field.placeholder"
@@ -122,8 +172,10 @@ watch(
           />
           <UButton
             type="submit"
-            label="Send Invite"
+            :label="isEditMode ? 'Update Member' : 'Send Invite'"
             color="primary"
+            :loading="updatingMember"
+            :disabled="updatingMember"
           />
         </div>
       </UForm>

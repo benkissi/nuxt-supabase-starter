@@ -31,10 +31,18 @@ const toast = useToast();
 
 const state = reactive<InviteSchemaType>({
   email: "",
+  name: "",
   role: "viewer",
 });
 
 const fields = ref([
+  {
+    name: "name",
+    label: "Name",
+    type: "text",
+    required: false,
+    placeholder: "Member name (optional)",
+  },
   {
     name: "email",
     label: "Email",
@@ -62,21 +70,40 @@ const fields = ref([
 
 const reset = () => {
   state.email = "";
+  state.name = "";
   state.role = "viewer";
 };
 
 const handleSubmit = async () => {
   try {
+    if (!currentOrganization.value?.id) {
+      throw new Error("No organization selected. Please select an organization first.");
+    }
+
     sendingInvite.value = true;
-    await api.members.sendInvite({
+    const result = await api.members.sendInvite({
       ...state,
-      organization_id: currentOrganization.value?.id,
+      organization_id: currentOrganization.value.id,
     });
-    toast.add({
-      title: "Invite Sent",
-      description: `Invitation sent to ${state.email}`,
-      color: "success",
-    });
+    
+    // Check if email was sent successfully
+    const emailSent = result.email_sent !== false;
+    
+    if (emailSent) {
+      toast.add({
+        title: "Invite Sent",
+        description: `Invitation email sent to ${state.email}`,
+        color: "success",
+      });
+    } else {
+      toast.add({
+        title: "Invitation Created",
+        description: `Invitation created but email failed to send. Check server logs for details.`,
+        color: "warning",
+      });
+      console.warn("Email sending failed. Invitation link:", result.invitation?.invitation_link);
+    }
+    
     reset();
     emit("invitationSent");
   } catch (error) {
@@ -140,6 +167,7 @@ watch(
   (newInvite) => {
     if (newInvite) {
       state.email = newInvite.email;
+      state.name = newInvite.name || "";
       state.role = newInvite.role;
     } else {
       reset();

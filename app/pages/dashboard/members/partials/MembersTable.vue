@@ -15,6 +15,19 @@ const { data, status, refresh } = useAsyncData("members", async () => {
   return res;
 });
 
+// Listen for member updates
+onMounted(() => {
+  window.addEventListener("memberUpdated", () => {
+    refresh();
+  });
+});
+
+onUnmounted(() => {
+  window.removeEventListener("memberUpdated", () => {
+    refresh();
+  });
+});
+
 type TableColumn = {
   accessorKey: string;
   header?: string | ((ctx?: unknown) => unknown);

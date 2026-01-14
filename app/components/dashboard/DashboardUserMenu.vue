@@ -6,149 +6,204 @@ defineProps<{
 }>()
 
 const colorMode = useColorMode()
-const appConfig = useAppConfig()
+const authStore = useAuthStore()
+const { getPrivateImageUrl } = useSignedUrl()
+const supabase = useSupabaseClient()
+const router = useRouter()
+const toast = useToast()
+const showProfileModal = ref(false)
 
-const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
-const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
-
-const user = ref({
-  name: 'Benjamin Canac',
-  avatar: {
-    src: 'https://github.com/benjamincanac.png',
-    alt: 'Benjamin Canac'
+// Ensure member is fetched on mount if not available
+onMounted(async () => {
+  if (!authStore.currentMember && authStore.currentOrganization?.id && authStore.user) {
+    await authStore.fetchCurrentMember()
   }
 })
 
-const items = computed<DropdownMenuItem[][]>(() => ([[{
-  type: 'label',
-  label: user.value.name,
-  avatar: user.value.avatar
-}], [{
-  label: 'Profile',
-  icon: 'i-lucide-user'
-}, {
-  label: 'Billing',
-  icon: 'i-lucide-credit-card'
-}, {
-  label: 'Settings',
-  icon: 'i-lucide-settings',
-  to: '/settings'
-}], [{
-  label: 'Theme',
-  icon: 'i-lucide-palette',
-  children: [{
-    label: 'Primary',
-    slot: 'chip',
-    chip: appConfig.ui.colors.primary,
-    content: {
-      align: 'center',
-      collisionPadding: 16
-    },
-    children: colors.map(color => ({
-      label: color,
-      chip: color,
-      slot: 'chip',
-      checked: appConfig.ui.colors.primary === color,
-      type: 'checkbox',
-      onSelect: (e) => {
-        e.preventDefault()
+// Get user data from current member
+const user = computed(() => {
+  const member = authStore.currentMember;
+  if (!member) {
+    return {
+      name: "User",
+      avatar: undefined,
+    };
+  }
 
-        appConfig.ui.colors.primary = color
-      }
-    }))
-  }, {
-    label: 'Neutral',
-    slot: 'chip',
-    chip: appConfig.ui.colors.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.colors.neutral,
-    content: {
-      align: 'end',
-      collisionPadding: 16
-    },
-    children: neutrals.map(color => ({
-      label: color,
-      chip: color === 'neutral' ? 'old-neutral' : color,
-      slot: 'chip',
-      type: 'checkbox',
-      checked: appConfig.ui.colors.neutral === color,
-      onSelect: (e) => {
-        e.preventDefault()
+  const account = member.account as
+    | { name?: string; image?: { path?: string; bucket?: string } }
+    | null
+    | undefined;
+  // Check member.name first (like members table does), then account.name, then email
+  const name = (member as any).name || account?.name || member.email || "User";
+  const image = account?.image as
+    | { path?: string; bucket?: string }
+    | null
+    | undefined;
 
-        appConfig.ui.colors.neutral = color
-      }
-    }))
-  }]
-}, {
-  label: 'Appearance',
-  icon: 'i-lucide-sun-moon',
-  children: [{
-    label: 'Light',
-    icon: 'i-lucide-sun',
-    type: 'checkbox',
-    checked: colorMode.value === 'light',
-    onSelect(e: Event) {
-      e.preventDefault()
+  return {
+    name,
+    avatar:
+      image?.path && image?.bucket
+        ? {
+            src: "", // Will be set by async computed
+            alt: name,
+          }
+        : undefined,
+  };
+});
 
-      colorMode.preference = 'light'
+// Get signed URL for avatar
+const avatarUrl = ref<string | null>(null);
+
+watch(
+  () => authStore.currentMember,
+  async (member) => {
+    if (!member) {
+      avatarUrl.value = null;
+      return;
     }
-  }, {
-    label: 'Dark',
-    icon: 'i-lucide-moon',
-    type: 'checkbox',
-    checked: colorMode.value === 'dark',
-    onUpdateChecked(checked: boolean) {
-      if (checked) {
-        colorMode.preference = 'dark'
+
+    const account = member.account as
+      | { image?: { path?: string; bucket?: string } }
+      | null
+      | undefined;
+    const image = account?.image as
+      | { path?: string; bucket?: string }
+      | null
+      | undefined;
+
+    if (image?.path && image?.bucket) {
+      try {
+        avatarUrl.value = await getPrivateImageUrl(image.bucket, image.path);
+      } catch (error) {
+        console.error("Failed to get signed URL for avatar:", error);
+        avatarUrl.value = null;
       }
-    },
-    onSelect(e: Event) {
-      e.preventDefault()
+    } else {
+      avatarUrl.value = null;
     }
-  }]
-}], [{
-  label: 'Templates',
-  icon: 'i-lucide-layout-template',
-  children: [{
-    label: 'Starter',
-    to: 'https://starter-template.nuxt.dev/'
-  }, {
-    label: 'Landing',
-    to: 'https://landing-template.nuxt.dev/'
-  }, {
-    label: 'Docs',
-    to: 'https://docs-template.nuxt.dev/'
-  }, {
-    label: 'SaaS',
-    to: 'https://saas-template.nuxt.dev/'
-  }, {
-    label: 'Dashboard',
-    to: 'https://dashboard-template.nuxt.dev/',
-    color: 'primary',
-    checked: true,
-    type: 'checkbox'
-  }, {
-    label: 'Chat',
-    to: 'https://chat-template.nuxt.dev/'
-  }, {
-    label: 'Portfolio',
-    to: 'https://portfolio-template.nuxt.dev/'
-  }, {
-    label: 'Changelog',
-    to: 'https://changelog-template.nuxt.dev/'
-  }]
-}], [{
-  label: 'Documentation',
-  icon: 'i-lucide-book-open',
-  to: 'https://ui4.nuxt.com/docs/getting-started/installation/nuxt',
-  target: '_blank'
-}, {
-  label: 'GitHub repository',
-  icon: 'i-simple-icons-github',
-  to: 'https://github.com/nuxt-ui-templates/dashboard',
-  target: '_blank'
-}, {
-  label: 'Log out',
-  icon: 'i-lucide-log-out'
-}]]))
+  },
+  { immediate: true, deep: true }
+);
+
+// Helper function to get user initials
+const getUserInitials = (name: string): string => {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    const first = parts[0]?.[0];
+    const last = parts[parts.length - 1]?.[0];
+    if (first && last) {
+      return (first + last).toUpperCase();
+    }
+  }
+  return name.substring(0, 2).toUpperCase();
+};
+
+// Computed user with avatar URL
+const userWithAvatar = computed(() => {
+  const baseUser = user.value;
+  return {
+    ...baseUser,
+    avatar: avatarUrl.value
+      ? {
+          src: avatarUrl.value,
+          alt: baseUser.name,
+        }
+      : {
+          text: getUserInitials(baseUser.name),
+          alt: baseUser.name,
+        },
+  };
+});
+
+// Logout function
+const handleLogout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
+    
+    toast.add({
+      title: "Logged out",
+      description: "You have been successfully logged out",
+      color: "success",
+    });
+    
+    // Navigate to login page
+    await router.push("/auth/login");
+  } catch (error) {
+    console.error("Error during logout:", error);
+    toast.add({
+      title: "Logout failed",
+      description: error instanceof Error ? error.message : "Could not log out. Please try again.",
+      color: "error",
+    });
+  }
+};
+
+const items = computed<DropdownMenuItem[][]>(() => [
+  [
+    {
+      type: "label",
+      label: userWithAvatar.value.name,
+      avatar: userWithAvatar.value.avatar,
+    },
+  ],
+  [
+    {
+      label: "Profile",
+      icon: "i-lucide-user",
+      onSelect: () => {
+        showProfileModal.value = true;
+      },
+    },
+  ],
+  [
+    {
+      label: "Appearance",
+      icon: "i-lucide-sun-moon",
+      children: [
+        {
+          label: "Light",
+          icon: "i-lucide-sun",
+          type: "checkbox",
+          checked: colorMode.value === "light",
+          onSelect(e: Event) {
+            e.preventDefault();
+
+            colorMode.preference = "light";
+          },
+        },
+        {
+          label: "Dark",
+          icon: "i-lucide-moon",
+          type: "checkbox",
+          checked: colorMode.value === "dark",
+          onUpdateChecked(checked: boolean) {
+            if (checked) {
+              colorMode.preference = "dark";
+            }
+          },
+          onSelect(e: Event) {
+            e.preventDefault();
+          },
+        },
+      ],
+    },
+  ],
+  [
+    {
+      label: "Log out",
+      icon: "i-lucide-log-out",
+      onSelect: () => {
+        handleLogout();
+      },
+    },
+  ],
+]);
 </script>
 
 <template>
@@ -159,9 +214,9 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   >
     <UButton
       v-bind="{
-        ...user,
-        label: collapsed ? undefined : user?.name,
-        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
+        ...userWithAvatar,
+        label: collapsed ? undefined : userWithAvatar?.name,
+        trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down',
       }"
       color="neutral"
       variant="ghost"
@@ -169,7 +224,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       :square="collapsed"
       class="data-[state=open]:bg-elevated"
       :ui="{
-        trailingIcon: 'text-dimmed'
+        trailingIcon: 'text-dimmed',
       }"
     />
 
@@ -183,4 +238,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       />
     </template>
   </UDropdownMenu>
+
+  <!-- Profile Modal -->
+  <DashboardProfileModal v-model:open="showProfileModal" />
 </template>
